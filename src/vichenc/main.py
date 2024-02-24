@@ -19,7 +19,8 @@ class Entry:
     path: str
 
     def as_str(self):
-        return f"{self.encoding:<6}: {self.path}"
+        encoding = self.encoding or ""
+        return f"{encoding:<6}: {self.path}"
 
     @staticmethod
     def from_str(s: str) -> "Entry" | None:
