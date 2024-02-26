@@ -14,7 +14,7 @@ import chardet
 
 
 @dataclass
-class Entry:
+class Item:
     encoding: str | None
     path: str
 
@@ -23,18 +23,19 @@ class Entry:
         return f"{encoding:<6}: {self.path}"
 
     @staticmethod
-    def from_str(s: str) -> "Entry" | None:
+    def from_str(s: str) -> "Item" | None:
         """
-        >>> assert Entry.from_str("ascii: a.txt") == Entry(encoding="ascii", path="a.txt")
+        >>> assert Item.from_str("ascii: a.txt") == Item(encoding="ascii", path="a.txt")
         """
 
         try:
             parts = s.split(": ", 1)
         except ValueError:
             return None
+
         encoding = parts[0].strip()
         path = parts[1].strip()
-        return Entry(encoding=encoding, path=path)
+        return Item(encoding=encoding, path=path)
 
 
 def is_binary_file(file_path: str):
@@ -92,10 +93,10 @@ def change_encoding(
 def main():
     items = sys.argv[1:]
     if len(items) == 0:
-        for dir_entry in os.scandir(os.getcwd()):
-            items.append(dir_entry.path)
+        for directory in os.scandir(os.getcwd()):
+            items.append(directory.path)
 
-    before_entries: dict[str, Entry] = {}
+    before_items: dict[str, Item] = {}
     for item in map(Path, items):
 
         if not item.is_file():
@@ -105,23 +106,24 @@ def main():
             continue
 
         result = detect_file_encoding(str(item))
-        after = Entry(encoding=result["encoding"], path=str(item))
+        after = Item(encoding=result["encoding"], path=str(item))
 
-        assert after.path not in before_entries
-        before_entries[after.path] = after
+        assert after.path not in before_items
+        before_items[after.path] = after
 
-    before_content = "\n".join(e.as_str() for e in before_entries.values())
+    # open editor
+    before_content = "\n".join(e.as_str() for e in before_items.values())
     after_content = open_editor(before_content)
 
     for l in after_content.splitlines():
         if len(l) == 0:
             continue
 
-        after = Entry.from_str(l)
+        after = Item.from_str(l)
         if after is None:
             continue
 
-        before = before_entries.get(after.path)
+        before = before_items.get(after.path)
         if before is None:
             continue
 
